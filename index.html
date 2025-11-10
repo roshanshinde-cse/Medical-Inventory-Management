@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Medical Inventory System{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+    <i class="fas fa-tachometer-alt me-2"></i>Inventory Dashboard
+</h1>
+
+<!-- Quick Action Buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="mb-3"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="/add" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus-circle me-1"></i>Add Medicine
+                    </a>
+                    <a href="/buy" class="btn btn-success btn-sm">
+                        <i class="fas fa-shopping-cart me-1"></i>Buy Medicine
+                    </a>
+                    <a href="/restock" class="btn btn-warning btn-sm">
+                        <i class="fas fa-box-open me-1"></i>Restock
+                    </a>
+                    <a href="/backup" class="btn btn-info btn-sm">
+                        <i class="fas fa-download me-1"></i>Backup Data
+                    </a>
+                    <a href="/restore" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-upload me-1"></i>Restore Data
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <div class="icon-box primary mx-auto">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <h3 class="mb-0">{{ medicines|length }}</h3>
+                <p class="text-muted mb-0">Total Medicines</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card success">
+            <div class="card-body text-center">
+                <div class="icon-box success mx-auto">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="mb-0">{{ medicines|selectattr('quantity', '>', 10)|selectattr('expired', 'equalto', False)|list|length }}</h3>
+                <p class="text-muted mb-0">In Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card warning">
+            <div class="card-body text-center">
+                <div class="icon-box warning mx-auto">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="mb-0">{{ medicines|selectattr('quantity', '<=', 10)|selectattr('quantity', '>', 0)|list|length }}</h3>
+                <p class="text-muted mb-0">Low Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card danger">
+            <div class="card-body text-center">
+                <div class="icon-box danger mx-auto">
+                    <i class="fas fa-calendar-times"></i>
+                </div>
+                <h3 class="mb-0">{{ expired_count }}</h3>
+                <p class="text-muted mb-0">Expired</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert for Expired Medicines -->
+{% if expired_count > 0 %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading">
+        <i class="fas fa-exclamation-triangle me-2"></i>Expired Medicines Alert!
+    </h5>
+    <p class="mb-2">You have <strong>{{ expired_count }}</strong> expired medicine(s) in your inventory.</p>
+    <hr>
+    <div class="d-flex gap-2">
+        <a href="/expired" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-eye me-1"></i>View Expired Items
+        </a>
+        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmClearModal">
+            <i class="fas fa-minus-circle me-1"></i>Clear Stock (Set Qty to 0)
+        </button>
+        <a href="/restock" class="btn btn-sm btn-success">
+            <i class="fas fa-box-open me-1"></i>Restock Expired Items
+        </a>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Inventory Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Current Inventory</span>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="filterOptions" id="filterAll" autocomplete="off" checked>
+            <label class="btn btn-outline-light" for="filterAll">All</label>
+
+            <input type="radio" class="btn-check" name="filterOptions" id="filterActive" autocomplete="off">
+            <label class="btn btn-outline-light" for="filterActive">Active</label>
+
+            <input type="radio" class="btn-check" name="filterOptions" id="filterExpired" autocomplete="off">
+            <label class="btn btn-outline-light" for="filterExpired">Expired</label>
+
+            <input type="radio" class="btn-check" name="filterOptions" id="filterOutOfStock" autocomplete="off">
+            <label class="btn btn-outline-light" for="filterOutOfStock">Out of Stock</label>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if medicines %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Name</th>
+                        <th>Price (₹)</th>
+                        <th>Quantity</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for med in medicines %}
+                    <tr {% if med.expired %}class="table-danger expired-row"{% elif med.quantity == 0 %}class="table-secondary out-of-stock-row"{% else %}class="active-row"{% endif %} 
+                        data-expired="{{ med.expired|lower }}" 
+                        data-stock="{{ med.quantity }}">
+                        <td><strong>{{ med.batch }}</strong></td>
+                        <td>{{ med.name }}</td>
+                        <td>₹{{ "%.2f"|format(med.price) }}</td>
+                        <td>
+                            <span class="badge bg-{% if med.quantity == 0 %}secondary{% elif med.quantity > 10 %}success{% else %}warning{% endif %}">
+                                {{ med.quantity }}
+                            </span>
+                        </td>
+                        <td>{{ med.expiry }}</td>
+                        <td>
+                            {% if med.expired %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle me-1"></i>Expired
+                                </span>
+                            {% elif med.quantity == 0 %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-ban me-1"></i>Out of Stock
+                                </span>
+                            {% elif med.quantity <= 10 %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Low Stock
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i>Available
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if med.expired or med.quantity <= 10 %}
+                            <a href="/restock" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-box-open me-1"></i>Restock
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h4>No Medicines in Inventory</h4>
+            <p>Start by adding medicines to your inventory.</p>
+            <a href="/add" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i>Add Medicine
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Confirmation Modal for Clearing Expired Stock -->
+<div class="modal fade" id="confirmClearModal" tabindex="-1" aria-labelledby="confirmClearModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmClearModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Clear Stock
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to set quantity to 0 for all <strong>{{ expired_count }}</strong> expired medicine(s)?</p>
+                <p class="text-info mt-2 mb-0">
+                    <small><i class="fas fa-info-circle me-1"></i>The medicines will remain in inventory but with 0 stock. You can restock them later.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <a href="/remove_expired" class="btn btn-danger">
+                    <i class="fas fa-minus-circle me-1"></i>Yes, Clear Stock
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Filter functionality
+    $('input[name="filterOptions"]').on('change', function() {
+        const filter = $(this).attr('id');
+        const rows = $('#inventoryTable tbody tr');
+
+        rows.hide();
+
+        switch(filter) {
+            case 'filterAll':
+                rows.show();
+                break;
+            case 'filterActive':
+                rows.filter('.active-row').show();
+                break;
+            case 'filterExpired':
+                rows.filter('.expired-row').show();
+                break;
+            case 'filterOutOfStock':
+                rows.filter('.out-of-stock-row').show();
+                break;
+        }
+    });
+});
+</script>
+{% endblock %}

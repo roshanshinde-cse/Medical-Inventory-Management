@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Update Stock - Medical Inventory System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-edit me-2"></i>Update Medicine Stock
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="/update" id="updateForm">
+                    <div class="mb-3">
+                        <label for="medicineSelect" class="form-label">
+                            <i class="fas fa-search me-1"></i>Search & Select Medicine
+                        </label>
+                        <select class="form-select" id="medicineSelect" name="batch" required>
+                            <option value="">Type to search medicine...</option>
+                            {% for med in medicines %}
+                            <option value="{{ med.batch }}" 
+                                    data-name="{{ med.name }}"
+                                    data-batch="{{ med.batch }}"
+                                    data-price="{{ med.price }}"
+                                    data-quantity="{{ med.quantity }}"
+                                    data-expiry="{{ med.expiry }}">
+                                {{ med.name }} (Batch: {{ med.batch }}) - Current Stock: {{ med.quantity }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Medicine Info Display -->
+                    <div class="medicine-info-card" id="medicineInfo">
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Current Details</h6>
+                        <div class="info-item">
+                            <span class="info-label">Medicine Name:</span>
+                            <span class="info-value" id="infoName">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Batch Number:</span>
+                            <span class="info-value" id="infoBatch">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Price:</span>
+                            <span class="info-value" id="infoPrice">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Stock:</span>
+                            <span class="info-value" id="infoStock">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Expiry:</span>
+                            <span class="info-value" id="infoExpiry">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label for="qty" class="form-label">
+                            <i class="fas fa-boxes me-1"></i>New Quantity
+                        </label>
+                        <input type="number" class="form-control" id="qty" name="qty" 
+                               placeholder="Enter new quantity" min="0" required>
+                        <small class="form-text text-muted">This will replace the current stock quantity</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="expiry" class="form-label">
+                            <i class="fas fa-calendar-alt me-1"></i>New Expiry Date
+                        </label>
+                        <input type="date" class="form-control" id="expiry" name="expiry" required>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-sync-alt me-2"></i>Update Stock
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('#medicineSelect').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Type to search medicine...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Handle medicine selection
+    $('#medicineSelect').on('change', function() {
+        const selectedOption = $(this).find(':selected');
+        
+        if (selectedOption.val()) {
+            const name = selectedOption.data('name');
+            const batch = selectedOption.data('batch');
+            const price = selectedOption.data('price');
+            const quantity = selectedOption.data('quantity');
+            const expiry = selectedOption.data('expiry');
+
+            // Update info card
+            $('#infoName').text(name);
+            $('#infoBatch').text(batch);
+            $('#infoPrice').text('₹' + parseFloat(price).toFixed(2));
+            $('#infoStock').html('<span class="badge bg-info">' + quantity + ' units</span>');
+            $('#infoExpiry').text(expiry);
+            $('#medicineInfo').addClass('show');
+
+            // Pre-fill form fields with current values
+            $('#qty').val(quantity);
+            $('#expiry').val(expiry);
+            $('#submitBtn').prop('disabled', false);
+        } else {
+            $('#medicineInfo').removeClass('show');
+            $('#qty').val('');
+            $('#expiry').val('');
+            $('#submitBtn').prop('disabled', true);
+        }
+    });
+});
+</script>
+{% endblock %}

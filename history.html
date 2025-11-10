@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History - Medical Inventory System{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+    <i class="fas fa-history me-2"></i>Transaction History
+</h1>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-file-invoice me-2"></i>All Transactions & Updates
+    </div>
+    <div class="card-body">
+        {% if history %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Timestamp</th>
+                        <th>Transaction Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history %}
+                    <tr>
+                        <td><strong>{{ record.index }}</strong></td>
+                        <td>
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i>{{ record.timestamp }}
+                            </small>
+                        </td>
+                        <td>{{ record.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                Total transactions recorded: <strong>{{ history|length }}</strong>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <h4>No Transaction History</h4>
+            <p>No purchases or updates have been made yet.</p>
+            <a href="/buy" class="btn btn-primary">
+                <i class="fas fa-shopping-cart me-2"></i>Make First Purchase
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

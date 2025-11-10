@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Buy Medicine - Medical Inventory System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-shopping-cart me-2"></i>Purchase Medicine
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="/buy" id="buyForm">
+                    <div class="mb-3">
+                        <label for="medicineSelect" class="form-label">
+                            <i class="fas fa-search me-1"></i>Search & Select Medicine
+                        </label>
+                        <select class="form-select" id="medicineSelect" name="batch" required>
+                            <option value="">Type to search medicine...</option>
+                            {% for med in medicines %}
+                            {% if med.quantity > 0 and not med.expired %}
+                            <option value="{{ med.batch }}" 
+                                    data-name="{{ med.name }}"
+                                    data-batch="{{ med.batch }}"
+                                    data-price="{{ med.price }}"
+                                    data-quantity="{{ med.quantity }}"
+                                    data-expiry="{{ med.expiry }}">
+                                {{ med.name }} (Batch: {{ med.batch }}) - Stock: {{ med.quantity }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Only active, in-stock medicines are shown</small>
+                    </div>
+
+                    <!-- Medicine Info Display -->
+                    <div class="medicine-info-card" id="medicineInfo">
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Medicine Details</h6>
+                        <div class="info-item">
+                            <span class="info-label">Medicine Name:</span>
+                            <span class="info-value" id="infoName">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Batch Number:</span>
+                            <span class="info-value" id="infoBatch">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Price per Unit:</span>
+                            <span class="info-value" id="infoPrice">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Available Stock:</span>
+                            <span class="info-value" id="infoStock">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Expiry Date:</span>
+                            <span class="info-value" id="infoExpiry">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label for="qty" class="form-label">
+                            <i class="fas fa-sort-numeric-up me-1"></i>Quantity to Purchase
+                        </label>
+                        <input type="number" class="form-control" id="qty" name="qty" 
+                               placeholder="Enter quantity" min="1" max="1" required>
+                        <small class="form-text text-muted">Maximum available: <span id="maxQty">0</span></small>
+                    </div>
+
+                    <div class="alert alert-info" role="alert" id="totalCost" style="display:none;">
+                        <i class="fas fa-calculator me-2"></i>
+                        <strong>Estimated Total:</strong> ₹<span id="totalAmount">0.00</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-check-circle me-2"></i>Complete Purchase
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('#medicineSelect').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Type to search medicine...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Handle medicine selection
+    $('#medicineSelect').on('change', function() {
+        const selectedOption = $(this).find(':selected');
+        
+        if (selectedOption.val()) {
+            const name = selectedOption.data('name');
+            const batch = selectedOption.data('batch');
+            const price = selectedOption.data('price');
+            const quantity = selectedOption.data('quantity');
+            const expiry = selectedOption.data('expiry');
+
+            // Update info card
+            $('#infoName').text(name);
+            $('#infoBatch').text(batch);
+            $('#infoPrice').text('₹' + parseFloat(price).toFixed(2));
+            $('#infoStock').html('<span class="badge bg-success">' + quantity + ' units</span>');
+            $('#infoExpiry').text(expiry);
+            $('#medicineInfo').addClass('show');
+
+            // Update quantity input
+            $('#qty').attr('max', quantity).val('');
+            $('#maxQty').text(quantity);
+            $('#submitBtn').prop('disabled', false);
+
+            // Show and calculate total
+            $('#qty').on('input', function() {
+                const qty = parseInt($(this).val()) || 0;
+                const total = qty * parseFloat(price);
+                $('#totalAmount').text(total.toFixed(2));
+                $('#totalCost').show();
+            });
+        } else {
+            $('#medicineInfo').removeClass('show');
+            $('#qty').val('').attr('max', 1);
+            $('#totalCost').hide();
+            $('#submitBtn').prop('disabled', true);
+        }
+    });
+});
+</script>
+{% endblock %}

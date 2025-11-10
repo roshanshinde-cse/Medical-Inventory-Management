@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Restore Inventory - Medical Inventory System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-upload me-2"></i>Restore Inventory Data
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Important Warning!
+                    </h5>
+                    <p class="mb-2">Restoring inventory will <strong>replace</strong> your current inventory data. Your existing data will be automatically backed up before restoration.</p>
+                    <hr>
+                    <p class="mb-0">Please ensure your CSV file follows the correct format before uploading.</p>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="fas fa-file-csv me-2"></i>Required CSV Format:</h6>
+                        <p class="mb-2"><strong>Header Row (Required):</strong></p>
+                        <code class="d-block bg-white p-2 rounded mb-3">
+                            Medicine Name,Batch Number,Expiry Date,Quantity,Price,Original Quantity
+                        </code>
+                        
+                        <p class="mb-2"><strong>Example Data Rows:</strong></p>
+                        <code class="d-block bg-white p-2 rounded mb-3">
+                            Paracetamol,1001,2025-12-31,500,5.50,500<br>
+                            Amoxicillin,1002,2026-06-30,300,15.00,300
+                        </code>
+
+                        <h6 class="mt-3 mb-2"><i class="fas fa-check-circle me-2"></i>Validation Rules:</h6>
+                        <ul class="mb-0">
+                            <li>Header must match exactly</li>
+                            <li>Expiry Date format: YYYY-MM-DD</li>
+                            <li>Quantity, Price, and Original Quantity must be numbers</li>
+                            <li>No negative values allowed</li>
+                            <li>File must be in CSV format (.csv)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <form method="POST" action="/restore" enctype="multipart/form-data" id="restoreForm">
+                    <div class="mb-4">
+                        <label for="file" class="form-label">
+                            <i class="fas fa-file-upload me-1"></i>Select CSV File to Upload
+                        </label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                        <small class="form-text text-muted">Maximum file size: 16MB</small>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="confirmRestore" required>
+                        <label class="form-check-label" for="confirmRestore">
+                            I understand that this will replace my current inventory data. I have backed up my data if needed.
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-upload me-2"></i>Upload and Restore Inventory
+                        </button>
+                        <a href="/backup" class="btn btn-outline-success">
+                            <i class="fas fa-download me-2"></i>Backup Current Data First
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel and Go Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sample CSV Download -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-lightbulb me-2"></i>Need a Sample CSV Template?
+            </div>
+            <div class="card-body">
+                <p>Download a sample CSV template to understand the correct format:</p>
+                <button type="button" class="btn btn-info" id="downloadSample">
+                    <i class="fas fa-download me-2"></i>Download Sample CSV Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Enable submit button only when checkbox is checked
+    $('#confirmRestore').on('change', function() {
+        $('#submitBtn').prop('disabled', !this.checked);
+    });
+
+    // File input validation
+    $('#file').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const fileName = file.name;
+            const fileSize = file.size;
+            const maxSize = 16 * 1024 * 1024; // 16MB
+
+            if (!fileName.toLowerCase().endsWith('.csv')) {
+                alert('Please select a CSV file!');
+                this.value = '';
+                return;
+            }
+
+            if (fileSize > maxSize) {
+                alert('File size exceeds 16MB limit!');
+                this.value = '';
+                return;
+            }
+        }
+    });
+
+    // Download sample CSV template
+    $('#downloadSample').on('click', function() {
+        const csvContent = "Medicine Name,Batch Number,Expiry Date,Quantity,Price,Original Quantity\n" +
+                          "Paracetamol,1001,2025-12-31,500,5.50,500\n" +
+                          "Amoxicillin,1002,2026-06-30,300,15.00,300\n" +
+                          "Ibuprofen,1003,2025-09-15,750,8.25,750\n" +
+                          "Aspirin,1004,2026-03-20,1000,3.00,1000";
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'sample_inventory_template.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+
+    // Form submission confirmation
+    $('#restoreForm').on('submit', function(e) {
+        if (!confirm('Are you sure you want to restore inventory from this CSV file? Your current data will be backed up automatically.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

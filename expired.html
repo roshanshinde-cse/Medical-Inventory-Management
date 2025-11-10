@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Expired Medicines - Medical Inventory System{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+    <i class="fas fa-calendar-times me-2"></i>Expired Medicines
+</h1>
+
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>
+                <i class="fas fa-calendar-times me-2"></i>Medicines Past Expiry Date
+            </span>
+            <div class="btn-group">
+                {% if expired %}
+                <a href="/restock" class="btn btn-light btn-sm me-2">
+                    <i class="fas fa-box-open me-1"></i>Restock Expired
+                </a>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#confirmClearModal">
+                    <i class="fas fa-minus-circle me-1"></i>Clear All Stock
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if expired %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Warning:</strong> {{ expired|length }} medicine(s) have expired. You can clear their stock or restock with new expiry dates.
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Name</th>
+                        <th>Price (₹)</th>
+                        <th>Quantity</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for med in expired %}
+                    <tr class="table-danger">
+                        <td><strong>{{ med.batch }}</strong></td>
+                        <td>{{ med.name }}</td>
+                        <td>₹{{ "%.2f"|format(med.price) }}</td>
+                        <td>
+                            <span class="badge bg-{% if med.quantity == 0 %}secondary{% else %}danger{% endif %}">
+                                {{ med.quantity }} units
+                            </span>
+                        </td>
+                        <td>{{ med.expiry }}</td>
+                        <td>
+                            <span class="badge bg-danger">
+                                <i class="fas fa-clock me-1"></i>Expired
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/restock" class="btn btn-sm btn-success">
+                                <i class="fas fa-box-open me-1"></i>Restock
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-lightbulb me-2"></i>
+                <strong>Tip:</strong> Use "Restock" to add new stock with updated expiry dates. Use "Clear All Stock" to set quantities to 0 for all expired items.
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <h4>No Expired Medicines</h4>
+            <p>All medicines in your inventory are within their expiry dates.</p>
+            <a href="/" class="btn btn-success">
+                <i class="fas fa-home me-2"></i>Back to Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmClearModal" tabindex="-1" aria-labelledby="confirmClearModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmClearModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Clear Stock
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to set quantity to 0 for all <strong>{{ expired|length }}</strong> expired medicine(s)?</p>
+                <p class="text-info mt-2 mb-0">
+                    <small><i class="fas fa-info-circle me-1"></i>The medicines will remain in inventory but with 0 stock. You can restock them later.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <a href="/remove_expired" class="btn btn-danger">
+                    <i class="fas fa-minus-circle me-1"></i>Yes, Clear Stock
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

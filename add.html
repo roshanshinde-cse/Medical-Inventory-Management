@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Add Medicine - Medical Inventory System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-plus-circle me-2"></i>Add New Medicine
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Tip:</strong> You can search existing medicines below to view their details. For new medicines, enter all details manually.
+                </div>
+
+                <!-- Quick Search Existing Medicines -->
+                <div class="mb-4">
+                    <label for="quickSearch" class="form-label">
+                        <i class="fas fa-search me-1"></i>Quick Search Existing Medicines (Optional)
+                    </label>
+                    <select class="form-select" id="quickSearch">
+                        <option value="">Search existing medicines for reference...</option>
+                        {% set inventory = [] %}
+                        {% if medicines is defined %}
+                            {% set inventory = medicines %}
+                        {% else %}
+                            {% set inventory = [] %}
+                        {% endif %}
+                        {% for med in inventory %}
+                        <option value="{{ med.batch }}" 
+                                data-name="{{ med.name }}"
+                                data-price="{{ med.price }}"
+                                data-expiry="{{ med.expiry }}">
+                            {{ med.name }} (Batch: {{ med.batch }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">This is for reference only. Each medicine must have a unique batch number.</small>
+                </div>
+
+                <hr class="my-4">
+
+                <form method="POST" action="/add" id="addForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-capsules me-1"></i>Medicine Name *
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="Enter medicine name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="batch" class="form-label">
+                            <i class="fas fa-hashtag me-1"></i>Batch Number *
+                        </label>
+                        <input type="text" class="form-control" id="batch" name="batch" 
+                               placeholder="Enter unique batch number" required>
+                        <small class="form-text text-muted">Must be unique for each batch</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">
+                                <i class="fas fa-rupee-sign me-1"></i>Price (₹) *
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="price" name="price" 
+                                   placeholder="0.00" min="0" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="qty" class="form-label">
+                                <i class="fas fa-boxes me-1"></i>Quantity *
+                            </label>
+                            <input type="number" class="form-control" id="qty" name="qty" 
+                                   placeholder="0" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="expiry" class="form-label">
+                            <i class="fas fa-calendar-alt me-1"></i>Expiry Date *
+                        </label>
+                        <input type="date" class="form-control" id="expiry" name="expiry" required>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Add Medicine
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="resetBtn">
+                            <i class="fas fa-redo me-2"></i>Reset Form
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for quick search
+    $('#quickSearch').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search existing medicines for reference...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Handle quick search selection (for reference only)
+    $('#quickSearch').on('change', function() {
+        const selectedOption = $(this).find(':selected');
+        
+        if (selectedOption.val()) {
+            const name = selectedOption.data('name');
+            const price = selectedOption.data('price');
+            const expiry = selectedOption.data('expiry');
+
+            // Fill in name and price as reference (batch must be unique)
+            $('#name').val(name);
+            $('#price').val(price);
+            
+            // Show info message
+            alert('Medicine details loaded for reference. Please enter a NEW unique batch number for this addition.');
+            $('#batch').focus();
+        }
+    });
+
+    // Reset form
+    $('#resetBtn').on('click', function() {
+        $('#addForm')[0].reset();
+        $('#quickSearch').val('').trigger('change');
+    });
+
+    // Set minimum date to today for expiry
+    const today = new Date().toISOString().split('T')[0];
+    $('#expiry').attr('min', today);
+});
+</script>
+{% endblock %}

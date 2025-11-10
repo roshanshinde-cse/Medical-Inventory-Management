@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Restock Medicine - Medical Inventory System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-box-open me-2"></i>Restock Medicine
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Restock:</strong> Add quantity to existing medicines, including expired ones. Update expiry date if needed.
+                </div>
+
+                <form method="POST" action="/restock" id="restockForm">
+                    <div class="mb-3">
+                        <label for="medicineSelect" class="form-label">
+                            <i class="fas fa-search me-1"></i>Search & Select Medicine
+                        </label>
+                        <select class="form-select" id="medicineSelect" name="batch" required>
+                            <option value="">Type to search medicine...</option>
+                            {% for med in medicines %}
+                            <option value="{{ med.batch }}" 
+                                    data-name="{{ med.name }}"
+                                    data-batch="{{ med.batch }}"
+                                    data-price="{{ med.price }}"
+                                    data-quantity="{{ med.quantity }}"
+                                    data-expiry="{{ med.expiry }}"
+                                    data-expired="{{ med.expired|lower }}">
+                                {{ med.name }} (Batch: {{ med.batch }}) - Current Stock: {{ med.quantity }}
+                                {% if med.expired %}<span style="color:red;">[EXPIRED]</span>{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Medicine Info Display -->
+                    <div class="medicine-info-card" id="medicineInfo">
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Current Details</h6>
+                        <div class="info-item">
+                            <span class="info-label">Medicine Name:</span>
+                            <span class="info-value" id="infoName">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Batch Number:</span>
+                            <span class="info-value" id="infoBatch">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Price:</span>
+                            <span class="info-value" id="infoPrice">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Stock:</span>
+                            <span class="info-value" id="infoStock">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Current Expiry:</span>
+                            <span class="info-value" id="infoExpiry">-</span>
+                        </div>
+                        <div class="info-item" id="expiredWarning" style="display:none;">
+                            <span class="badge bg-danger w-100">
+                                <i class="fas fa-exclamation-triangle me-1"></i>This medicine is EXPIRED. Please update expiry date!
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label for="qty" class="form-label">
+                            <i class="fas fa-plus-circle me-1"></i>Quantity to Add
+                        </label>
+                        <input type="number" class="form-control" id="qty" name="qty" 
+                               placeholder="Enter quantity to add" min="1" required>
+                        <small class="form-text text-muted">This will be added to current stock</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="expiry" class="form-label">
+                            <i class="fas fa-calendar-alt me-1"></i>New Expiry Date (Optional)
+                        </label>
+                        <input type="date" class="form-control" id="expiry" name="expiry">
+                        <small class="form-text text-muted">Leave blank to keep current expiry date. Required for expired medicines.</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-box-open me-2"></i>Restock Medicine
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('#medicineSelect').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Type to search medicine...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Set minimum date to today for expiry
+    const today = new Date().toISOString().split('T')[0];
+    $('#expiry').attr('min', today);
+
+    // Handle medicine selection
+    $('#medicineSelect').on('change', function() {
+        const selectedOption = $(this).find(':selected');
+        
+        if (selectedOption.val()) {
+            const name = selectedOption.data('name');
+            const batch = selectedOption.data('batch');
+            const price = selectedOption.data('price');
+            const quantity = selectedOption.data('quantity');
+            const expiry = selectedOption.data('expiry');
+            const isExpired = selectedOption.data('expired') === 'true';
+
+            // Update info card
+            $('#infoName').text(name);
+            $('#infoBatch').text(batch);
+            $('#infoPrice').text('₹' + parseFloat(price).toFixed(2));
+            
+            let stockBadge = '<span class="badge bg-';
+            if (quantity === 0) {
+                stockBadge += 'danger">OUT OF STOCK';
+            } else if (quantity <= 10) {
+                stockBadge += 'warning">' + quantity + ' units (LOW)';
+            } else {
+                stockBadge += 'success">' + quantity + ' units';
+            }
+            stockBadge += '</span>';
+            $('#infoStock').html(stockBadge);
+            
+            let expiryDisplay = expiry;
+            if (isExpired) {
+                expiryDisplay += ' <span class="badge bg-danger">EXPIRED</span>';
+                $('#expiredWarning').show();
+                $('#expiry').prop('required', true);
+            } else {
+                $('#expiredWarning').hide();
+                $('#expiry').prop('required', false);
+            }
+            $('#infoExpiry').html(expiryDisplay);
+            
+            $('#medicineInfo').addClass('show');
+            $('#submitBtn').prop('disabled', false);
+        } else {
+            $('#medicineInfo').removeClass('show');
+            $('#qty').val('');
+            $('#expiry').val('');
+            $('#submitBtn').prop('disabled', true);
+            $('#expiredWarning').hide();
+        }
+    });
+
+    // Validate form before submission
+    $('#restockForm').on('submit', function(e) {
+        const selectedOption = $('#medicineSelect').find(':selected');
+        const isExpired = selectedOption.data('expired') === 'true';
+        const newExpiry = $('#expiry').val();
+
+        if (isExpired && !newExpiry) {
+            e.preventDefault();
+            alert('This medicine is expired! You must provide a new expiry date.');
+            $('#expiry').focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
