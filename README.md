@@ -15,6 +15,6 @@ A C++ Object-Oriented Programming (OOP) project that manages medicine stock, exp
 - **Storage:** Text files (`inventory.txt`, `history.txt`)
 
 ## How to Run
-1. Open `main.cpp` in any IDE (Code::Blocks, VS Code, Dev C++).
+1. Open `app.py` in any IDE (Code::Blocks, VS Code, Dev C++).
 2. Compile and run the program.
 3. Follow the on-screen menu to manage medicines.
